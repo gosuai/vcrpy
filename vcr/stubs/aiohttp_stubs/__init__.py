@@ -171,6 +171,7 @@ def vcr_request(cassette, real_request):
         headers = self._prepare_headers(headers)
         data = kwargs.get("data", kwargs.get("json"))
         params = kwargs.get("params")
+        raise_for_status = kwargs.get("raise_for_status")
 
         if auth is not None:
             headers["AUTHORIZATION"] = auth.encode()
@@ -195,7 +196,13 @@ def vcr_request(cassette, real_request):
             )
             msg = msg.format(vcr_request, cassette._path, cassette.record_mode)
             response._body = msg.encode()
+            response.reason = msg
             response.close()
+            if raise_for_status is None:
+                raise_for_status = self._raise_for_status
+            if raise_for_status:
+                response.raise_for_status()
+
             return response
 
         log.info("%s not in cassette, sending to real server", vcr_request)
